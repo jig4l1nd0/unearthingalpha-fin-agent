@@ -3,3 +3,5 @@ langchain-community
 langchain_huggingface
 langchain-text-splitters
 langchain-core
+sentence-transformers
+chromadb
