@@ -1,2 +1,9 @@
 langchain
+langchain-classic
 langchain-community
+langchain_huggingface
+langchain-text-splitters
+langchain-core
+sentence-transformers
+chromadb
+rank-bm25
