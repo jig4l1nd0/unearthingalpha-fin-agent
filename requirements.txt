@@ -4,6 +4,7 @@ langchain-community
 langchain_huggingface
 langchain-text-splitters
 langchain-core
+langchain-ollama
 sentence-transformers
 chromadb
 rank-bm25

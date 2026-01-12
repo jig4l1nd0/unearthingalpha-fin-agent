@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
@@ -7,25 +7,36 @@ from langchain_core.documents import Document
 
 class RAGGenerator:
     """
-    Handles the generation step of the RAG pipeline using OpenAI GPT models.
+    Handles the generation step of the RAG pipeline using local Ollama models.
 
-    This component takes retrieved documents and generates answers while enforcing
-    strict citation requirements to reduce financial hallucinations.
+    This component uses local open-source models via Ollama to generate answers 
+    while enforcing strict citation requirements to reduce financial hallucinations.
+    No API keys or internet connection required.
 
     Attributes:
-        llm: ChatOpenAI instance configured for financial analysis
+        llm: ChatOllama instance configured for financial analysis
         prompt: Template for structuring prompts with context and citations
+        model_name: Name of the local Ollama model being used
     """
 
-    def __init__(self, model_name: str = "gpt-4o-mini"):
+    def __init__(self, model_name: str = "llama3.2:3b"):
         """
-        Initialize the RAG generator with specified model configuration.
+        Initialize the RAG generator with specified local Ollama model.
 
         Args:
-            model_name: OpenAI model to use for generation
+            model_name: Ollama model to use for generation
+                       Popular options: "llama3.2:3b", "llama3.1:8b", "mistral:7b", "qwen2.5:7b"
         """
-        # Temperature=0 is CRITICAL for financial RAG to reduce hallucinations
-        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        self.model_name = model_name
+
+        # Initialize local Ollama model (no API key required)
+        self.llm = ChatOllama(
+            model=model_name,
+            temperature=0,  # CRITICAL for financial RAG to reduce hallucinations
+            timeout=120     # Increased timeout for local model processing
+        )
+        print(f"✓ Using local Ollama model: {model_name}")
+        print("💡 Tip: Make sure Ollama is running with 'ollama serve' and the model is downloaded")
 
         # Strict prompt to enforce citations and honesty
         self.prompt = ChatPromptTemplate.from_template("""
