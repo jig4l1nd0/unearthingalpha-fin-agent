@@ -7,3 +7,6 @@ langchain-core
 sentence-transformers
 chromadb
 rank-bm25
+bs4
+lxml
+sec_edgar_downloader
