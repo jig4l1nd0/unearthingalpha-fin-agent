@@ -1,5 +1,3 @@
-langchain
+langchain=0.3.27
 langchain-community
-scikit-learn
-numpy
 langchain_huggingface
