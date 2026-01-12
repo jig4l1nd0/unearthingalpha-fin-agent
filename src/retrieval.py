@@ -7,6 +7,8 @@ from typing import List, Optional
 from langchain_core.documents import Document
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 
 
 class SearchComponent(ABC):
@@ -35,6 +37,25 @@ class DenseRetriever(SearchComponent):
         return self.retriever.invoke(query)
 
 
+class HybridRetriever(SearchComponent):
+    """
+    Combines Dense (Vectors) and Sparse (BM25) using a weighted average.
+    """
+    def __init__(self, bm25_retriever, vectorstore):
+        dense = vectorstore.as_retriever(search_kwargs={"k": 10})
+
+        # JUSTIFICATION: We weight BM25 (0.6) higher than Dense (0.4).
+        # In finance, if the user asks for "Project XYZ", they want that exact phrase.
+        # Dense search might give generic "Project Management" results.
+        self.ensemble = EnsembleRetriever(
+            retrievers=[bm25_retriever, dense],
+            weights=[0.6, 0.4]
+        )
+
+    def search(self, query: str) -> List[Document]:
+        return self.ensemble.invoke(query)
+
+
 class RetrievalPipeline:
     def __init__(self, persist_dir: str = "./chroma_db"):
         self.persist_dir = persist_dir
@@ -45,6 +66,7 @@ class RetrievalPipeline:
         self.embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
         self.vectorstore = None
+        self.bm25_retriever = None  # <--- NEW State
         self.active_retriever: Optional[SearchComponent] = None
 
     def index_documents(self, chunks: List[Document]):
@@ -53,18 +75,36 @@ class RetrievalPipeline:
         if os.path.exists(self.persist_dir):
             shutil.rmtree(self.persist_dir)
 
-        print(f"Indexing {len(chunks)} chunks...")
+        # 1. Build Dense
+        print(f"Indexing {len(chunks)} chunks (Dense)...")
         self.vectorstore = Chroma.from_documents(
-            documents=chunks,
+            documents=chunks, 
             embedding=self.embedding_model,
             persist_directory=self.persist_dir
         )
 
-        # Initialize Dense Retrieval by default
-        self.active_retriever = DenseRetriever(self.vectorstore)
-        print("Dense Indexing Complete.")
+        # 2. Build Sparse (NEW)
+        print("Indexing chunks (BM25)...")
+        self.bm25_retriever = BM25Retriever.from_documents(chunks)
+        self.bm25_retriever.k = 10
+
+        # Default to Dense (Baseline)
+        self.set_mode("dense")
+
+    def set_mode(self, mode: str):
+        """Allows toggling strategies for evaluation."""
+        if not self.vectorstore:
+            raise ValueError("Index not built!")
+
+        print(f"-> Switching to {mode} mode")
+        if mode == "dense":
+            self.active_retriever = DenseRetriever(self.vectorstore)
+        elif mode == "hybrid":
+            self.active_retriever = HybridRetriever(self.bm25_retriever, self.vectorstore)
+        else:
+            raise ValueError(f"Unknown mode: {mode}")
 
     def query(self, query_text: str) -> List[Document]:
         if not self.active_retriever:
-            raise ValueError("Index not built! Run index_documents() first.")
+            raise ValueError("Run index_documents() first.")
         return self.active_retriever.search(query_text)
