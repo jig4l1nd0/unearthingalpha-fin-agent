@@ -38,7 +38,7 @@ def ingest_data(data_dir: str):
 
 def build_retriever(chunks, mode: str = "dense") -> RetrievalPipeline:
     print("[Retrieval] Building indices (Dense + BM25)...")
-    retriever = RetrievalPipeline(persist_dir="./chroma_db")
+    retriever = RetrievalPipeline()
     retriever.index_documents(chunks)
     retriever.set_mode(mode)
     return retriever
