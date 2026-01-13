@@ -11,7 +11,7 @@ from src.retrieval import RetrievalPipeline
 def maybe_download_data(data_dir: str, force: bool) -> None:
     """
     Download and preprocess SEC 10-K filings if needed.
-    If `force` is False and text files already exist in `data_dir`, skip download.
+    If 'force' is False and text files already exist in 'data_dir', skip download.
     """
     has_txt = any(
         f.endswith(".txt") for f in os.listdir(data_dir)
@@ -53,7 +53,7 @@ def run_retrieval(retriever: RetrievalPipeline, query: str, top_k: int = 5) -> L
         if len(d.page_content) > 300:
             snippet = (d.page_content[:300] + "...")
         else:
-            d.page_content
+            snippet = d.page_content
         results.append(f"{i}. [source: {src}] {snippet}")
     return results
 
