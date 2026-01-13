@@ -250,6 +250,45 @@ Trade-offs
 - No cross-encoder re-ranking step yet (kept simple, CPU-only)
 - Weights are fixed; could be tuned via evaluation
 
+### Embedding Model Choice (all-MiniLM-L6-v2)
+
+Selected: `sentence-transformers/all-MiniLM-L6-v2`
+
+Why this model (the “80/20” rule)
+- Designed for fast, CPU-friendly sentence embeddings with strong semantic performance.
+- Produces 384-dim vectors, distilling larger BERT-family models into a smaller, efficient architecture.
+- In practice on CPU, MiniLM is noticeably faster than larger baselines while delivering competitive retrieval quality for finance text.
+
+Pros and cons (high-level)
+
+| Feature | all-MiniLM-L6-v2 | all-mpnet-base-v2 | Notes / Sources |
+|---|---|---|---|
+| Runtime | Fast on CPU; great for local RAG | Slower on CPU; better accuracy on some tasks | SBERT docs: pre-trained models overview [2] |
+| Model size | ~80 MB | ~420 MB | HF model cards / SBERT docs [2] |
+| Embedding dim | 384 | 768 | SBERT docs [2] |
+| Benchmarking | Competitive mid-tier MTEB | Higher MTEB scores overall | MTEB leaderboard [1] |
+| Deployment | Offline/local, no API needed | Offline/local, heavier footprint | Project constraints (CPU-only) |
+
+Justification (recruiter-friendly)
+“I selected all-MiniLM-L6-v2 due to strict CPU constraints. While `all-mpnet-base-v2` can yield slightly better benchmark scores, it is significantly slower and larger. For a take-home assignment, MiniLM’s latency and footprint advantages outweigh marginal accuracy gains.”
+
+Sources
+- [1] MTEB Leaderboard: https://huggingface.co/spaces/mteb/leaderboard
+- [2] SBERT Pre-trained Models: https://www.sbert.net/docs/pretrained_models.html
+
+### When hybrid can underperform (BM25 IDF trap)
+
+Observation
+- In small, high-signal corpora (e.g., a handful of 10-K chunks), BM25 may penalize domain-constant terms (e.g., product lines or recurring nouns), lowering scores for genuinely relevant chunks.
+
+Why this happens
+- BM25’s inverse document frequency (IDF) reduces the impact of terms common across many relevant chunks (e.g., “iPhone”, “Services”).
+- Dense embeddings (MiniLM) capture semantic relevance (e.g., “revenue” plus numerical context) without relying purely on term rarity.
+
+Practical guidance
+- Hybrid is often superior for heterogeneous corpora and jargon-heavy queries, but small, uniform corpora can favor pure dense.
+- Tune ensemble weights (e.g., BM25 vs dense) per query class; consider adding a cross-encoder reranker for final ordering.
+
 ----------------------------------------------------------------
 
 ## 7) Generation (Local LLM, Citations) — status
