@@ -1,11 +1,9 @@
-import shutil
-import os
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
 # Core Imports
 from langchain_core.documents import Document
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.ensemble import EnsembleRetriever
@@ -58,7 +56,7 @@ class HybridRetriever(SearchComponent):
 
 class RetrievalPipeline:
     def __init__(self, persist_dir: str = "./chroma_db"):
-        self.persist_dir = persist_dir
+        self.persist_dir = persist_dir  # kept for API compatibility; not used by FAISS
 
         # JUSTIFICATION: 'all-MiniLM-L6-v2' is the industry standard for CPU-based RAG.
         # It is 5x faster than 'mpnet' with only a 2% drop in accuracy.
@@ -71,16 +69,11 @@ class RetrievalPipeline:
 
     def index_documents(self, chunks: List[Document]):
         """Builds the Vector Index."""
-        # Cleanup ensures idempotency (running the script twice doesn't crash)
-        if os.path.exists(self.persist_dir):
-            shutil.rmtree(self.persist_dir)
-
-        # 1. Build Dense
-        print(f"Indexing {len(chunks)} chunks (Dense)...")
-        self.vectorstore = Chroma.from_documents(
-            documents=chunks, 
+        # 1. Build Dense with FAISS (in-memory; can be saved via save_local if needed)
+        print(f"Indexing {len(chunks)} chunks (Dense/FAISS)...")
+        self.vectorstore = FAISS.from_documents(
+            documents=chunks,
             embedding=self.embedding_model,
-            persist_directory=self.persist_dir
         )
 
         # 2. Build Sparse (NEW)

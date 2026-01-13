@@ -1,11 +1,11 @@
-langchain
-langchain-classic
-langchain-community
+langchain==1.2.3
+langchain-classic==1.0.1
+langchain-community==0.4.1
 langchain_huggingface
 langchain-text-splitters
-langchain-core
-sentence-transformers
-chromadb
+langchain-core==1.2.7
+sentence-transformers==5.2.0
+faiss-cpu
 rank-bm25
 bs4
 lxml
