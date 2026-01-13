@@ -5,12 +5,8 @@ langchain_huggingface
 langchain-text-splitters
 langchain-core
 sentence-transformers
-chromadb>=0.5.3
+faiss-cpu
 rank-bm25
 bs4
 lxml
 sec_edgar_downloader
-
-# Ensure compatibility between ChromaDB and Pydantic v2
-pydantic>=2.0,<3
-pydantic-settings>=2.0.0
